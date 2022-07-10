@@ -5,6 +5,12 @@ $DB_PORT = 5432
 
 $PortMap = "${DB_PORT}:5432"
 
+$Cwd = Get-Item . | Select Name
+
+if ($Cwd -eq "scripts") {
+    Set-Location ../
+}
+
 if (-not (Get-Command sqlx -ErrorAction SilentlyContinue)) {
     Write-Host -ForegroundColor Red "Error: sqlx is not installed."
     Write-Host -ForegroundColor Red "Use:"
@@ -28,10 +34,16 @@ while (-not (Test-NetConnection -ComputerName localhost -Port 5432 -InformationL
     Start-Sleep 1
 }
 
+Start-Sleep 5
 
-Write-Host -ForegroundColor Green "Postgres is up and running on port ${DB_PORT} - running migrations..."   
+Write-Host -ForegroundColor Green "Postgres is up and running on port ${DB_PORT} - running migrations..."
 
-sqlx database create
-sqlx migrate run
+$Env:DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}"
+
+$Output = (sqlx database create) | Out-String
+Write-Host -ForegroundColor Red $Output
+
+$Output = (sqlx migrate run) | Out-String
+Write-Host -ForegroundColor Red $Output
 
 Write-Host -ForegroundColor Green "Postgres has been migrated, ready to go!"

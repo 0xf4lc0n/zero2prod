@@ -1,3 +1,7 @@
+use opentelemetry::global;
+use opentelemetry::runtime::TokioCurrentThread;
+use opentelemetry::sdk::propagation::TraceContextPropagator;
+use opentelemetry::sdk::trace::Tracer;
 use tracing::subscriber::set_global_default;
 use tracing::Subscriber;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
@@ -24,13 +28,17 @@ pub fn get_subscriber<Sink>(
 where
     Sink: for<'a> MakeWriter<'a> + Send + Sync + 'static,
 {
+    let tracer = init_open_telemetry("zero2prod");
+
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(env_filter));
 
     let formatting_layer = BunyanFormattingLayer::new(name, sink);
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
     Registry::default()
         .with(env_filter)
+        .with(telemetry)
         .with(JsonStorageLayer)
         .with(formatting_layer)
 }
@@ -41,4 +49,13 @@ where
 pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
     LogTracer::init().expect("Failed to set logger");
     set_global_default(subscriber).expect("Failed to set subscriber");
+}
+
+fn init_open_telemetry(app_name: &str) -> Tracer {
+    global::set_text_map_propagator(TraceContextPropagator::new());
+
+     opentelemetry_jaeger::new_pipeline()
+        .with_service_name(app_name)
+        .install_batch(TokioCurrentThread)
+        .expect("Failed to install OpenTelemetry tracer")
 }

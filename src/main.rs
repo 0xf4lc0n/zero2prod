@@ -16,5 +16,9 @@ async fn main() -> std::io::Result<()> {
             .expect("failed to connect to Postgres");
     let address = format!("127.0.0.1:{}", configuration.application_port);
     let listener = TcpListener::bind(address)?;
-    run(listener, connection_pool)?.await
+    run(listener, connection_pool)?.await.expect("Failed to run Http server");
+
+    opentelemetry::global::shutdown_tracer_provider();
+
+    Ok(())
 }

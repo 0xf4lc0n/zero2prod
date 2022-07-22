@@ -1,6 +1,6 @@
 use secrecy::{ExposeSecret, Secret};
-use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use serde_aux::field_attributes::deserialize_number_from_string;
+use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::ConnectOptions;
 
 #[derive(serde::Deserialize)]
@@ -17,14 +17,14 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub host: String,
     pub database_name: String,
-    pub require_ssl: bool
+    pub require_ssl: bool,
 }
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
-    pub host: String
+    pub host: String,
 }
 
 impl DatabaseSettings {
@@ -68,7 +68,7 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     // It will look for any top-level file with an extension
     // that `config` knows how to parse: yaml, json, etc.
     settings.merge(
-        config::File::from(configuration_directory.join(environment.as_str())).required(true)
+        config::File::from(configuration_directory.join(environment.as_str())).required(true),
     )?;
 
     // Add in settings from environment variables (with a prefix of APP and '__' as separator)
@@ -80,14 +80,14 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
 
 pub enum Environment {
     Local,
-    Production
+    Production,
 }
 
 impl Environment {
     pub fn as_str(&self) -> &'static str {
         match self {
             Environment::Local => "local",
-            Environment::Production => "production"
+            Environment::Production => "production",
         }
     }
 }
@@ -102,7 +102,7 @@ impl TryFrom<String> for Environment {
             other => Err(format!(
                 "{} is not a supported environment. Use either `local` or `production`.",
                 other
-            ))
+            )),
         }
     }
 }

@@ -54,7 +54,7 @@ pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
 fn init_open_telemetry(app_name: &str) -> Tracer {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-     opentelemetry_jaeger::new_pipeline()
+    opentelemetry_jaeger::new_pipeline()
         .with_service_name(app_name)
         .install_batch(TokioCurrentThread)
         .expect("Failed to install OpenTelemetry tracer")

@@ -28,6 +28,7 @@ tracing-actix-web = "0.5"
 opentelemetry = { version = "0.17", features = ["rt-tokio-current-thread"] }
 opentelemetry-jaeger = { version = "0.16", features = ["rt-tokio-current-thread"] }
 tracing-opentelemetry = { version = "0.17" }
+serde-aux = "3"
 
 [dependencies.sqlx]
 version = "0.5.7"
@@ -38,5 +39,6 @@ features = [
     "postgres",
     "uuid",
     "chrono",
-    "migrate"
+    "migrate",
+    "offline"
 ]

@@ -1,5 +1,4 @@
-use secrecy::ExposeSecret;
-use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::net::TcpListener;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 use zero2prod::{configuration::get_configuration, startup::run};
@@ -10,13 +9,18 @@ async fn main() -> std::io::Result<()> {
     init_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to read configuration");
-    let connection_pool =
-        PgPool::connect(&configuration.database.connection_string().expose_secret())
-            .await
-            .expect("failed to connect to Postgres");
-    let address = format!("127.0.0.1:{}", configuration.application_port);
+    let connection_pool = PgPoolOptions::new()
+        .connect_timeout(std::time::Duration::from_micros(2))
+        .connect_lazy_with(configuration.database.with_db());
+
+    let address = format!(
+        "{}:{}",
+        configuration.application.host, configuration.application.port
+    );
     let listener = TcpListener::bind(address)?;
-    run(listener, connection_pool)?.await.expect("Failed to run Http server");
+    run(listener, connection_pool)?
+        .await
+        .expect("Failed to run Http server");
 
     opentelemetry::global::shutdown_tracer_provider();
 

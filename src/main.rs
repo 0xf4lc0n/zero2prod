@@ -1,4 +1,5 @@
 use sqlx::postgres::PgPoolOptions;
+use std::env;
 use std::net::TcpListener;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 use zero2prod::{configuration::get_configuration, startup::run};
@@ -13,10 +14,16 @@ async fn main() -> std::io::Result<()> {
         .connect_timeout(std::time::Duration::from_micros(2))
         .connect_lazy_with(configuration.database.with_db());
 
-    let address = format!(
-        "{}:{}",
-        configuration.application.host, configuration.application.port
-    );
+    // In Heroku there will be a PORT variable defined
+    let address = if let Ok(port) = env::var("PORT") {
+        format!("{}:{}", configuration.application.host, port)
+    } else {
+        format!(
+            "{}:{}",
+            configuration.application.host, configuration.application.port
+        );
+    };
+
     let listener = TcpListener::bind(address)?;
     run(listener, connection_pool)?
         .await

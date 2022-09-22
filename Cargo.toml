@@ -29,6 +29,14 @@ opentelemetry = { version = "0.17", features = ["rt-tokio-current-thread"] }
 opentelemetry-jaeger = { version = "0.16", features = ["rt-tokio-current-thread"] }
 tracing-opentelemetry = { version = "0.17" }
 serde-aux = "3"
+unicode-segmentation = "1"
+validator = "0.14.0"
+
+[dev-dependencies]
+claim = "0.5.0"
+fake = "~2.3"
+quickcheck = "0.9.2"
+quickcheck_macros = "0.9.1"
 
 [dependencies.sqlx]
 version = "0.5.7"

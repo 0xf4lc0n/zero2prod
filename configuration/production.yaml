@@ -2,3 +2,7 @@ application:
   host: 0.0.0.0
 database:
   require_ssl: true
+email_client:
+  base_url: "https://emailapi.netcorecloud.net"
+  sender_email: "pax12@pepisandbox.com"
+  api_key: "3626575c5bacc2f561862c810b6486cd"

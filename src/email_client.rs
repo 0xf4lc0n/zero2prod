@@ -74,7 +74,7 @@ impl EmailClient {
         let request_body = SendEmailRequest {
             from: EmailPeer {
                 email: self.sender.as_ref(),
-                name: "zero2prod".into(),
+                name: "zero2prod",
             },
             subject,
             content: vec![

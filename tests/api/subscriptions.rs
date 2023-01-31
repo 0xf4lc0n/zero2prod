@@ -1,13 +1,21 @@
-use  crate::helpers::spawn_app;
+use crate::helpers::spawn_app;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, ResponseTemplate};
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_data_form() {
     // Arrange
     let app = spawn_app().await;
-    let client = reqwest::Client::new();
+    let body = "name=Von%20Hux&email=hux%40gmail.com";
+
+    Mock::given(path("/v5/mail/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     // Act
-    let body = "name=Von%20Hux&email=hux%40gmail.com";
     let response = app.post_subscriptions(body.into()).await;
 
     // Assert
@@ -21,6 +29,7 @@ async fn subscribe_returns_a_200_for_valid_data_form() {
     assert_eq!(saved.email, "hux@gmail.com");
     assert_eq!(saved.name, "Von Hux");
 }
+
 #[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
     // Arrange
@@ -59,7 +68,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
 
     for (body, desc) in test_cases {
         // Act
-        let resp = app.post_subscriptions(body.into()).await?;
+        let resp = app.post_subscriptions(body.into()).await;
 
         assert_eq!(
             400,
@@ -68,4 +77,21 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
             desc
         );
     }
+}
+
+#[tokio::test]
+async fn subscribe_sends_a_confirmation_email_for_valid_data() {
+    // Arrange
+    let app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(path("/v5/mail/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act
+    app.post_subscriptions(body.into()).await;
 }

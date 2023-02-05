@@ -133,29 +133,7 @@ async fn subscribe_sends_a_confirmation_email_with_a_link() {
     // Assert
     // Get the first intercepted request
     let email_request = &app.email_server.received_requests().await.unwrap()[0];
+    let confirmation_links = app.get_confirmation_links(email_request);
 
-    // Parse the body as JSON, starting from raw bytes
-    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-
-    // Extract EmailContent from SendEmailRequest struct
-    let content = &body["content"].as_array().unwrap();
-    // Extract value field from html EmailContent struct
-    let html = &content[0].get("value").unwrap().as_str().unwrap();
-    // Extract value field from text EmailContent struct
-    let text = &content[1].get("value").unwrap().as_str().unwrap();
-
-    let get_link = |s: &str| {
-        let links: Vec<_> = linkify::LinkFinder::new()
-            .links(s)
-            .filter(|l| *l.kind() == linkify::LinkKind::Url)
-            .collect();
-
-        assert_eq!(links.len(), 1);
-        links[0].as_str().to_owned()
-    };
-
-    let html_link = get_link(html);
-    let text_link = get_link(text);
-
-    assert_eq!(html_link, text_link);
+    assert_eq!(confirmation_links.html, confirmation_links.plain_text);
 }

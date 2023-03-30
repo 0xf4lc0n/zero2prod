@@ -39,6 +39,18 @@ pub async fn change_password(
         return Ok(see_other("/admin/password"));
     }
 
+    let password_len = form.new_password.expose_secret().len();
+
+    if password_len <= 12 {
+        FlashMessage::error("The new password is too short.").send();
+        return Ok(see_other("/admin/password"));
+    }
+
+    if password_len >= 128 {
+        FlashMessage::error("The new password is too long.").send();
+        return Ok(see_other("/admin/password"));
+    }
+
     let username = get_username(user_id, &pool).await.map_err(e500)?;
 
     let credentials = Credentials {

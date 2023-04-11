@@ -20,6 +20,10 @@ impl TypedSesion {
     pub fn get_user_id(&self) -> Result<Option<Uuid>, serde_json::Error> {
         self.0.get(Self::USER_ID_KEY)
     }
+
+    pub fn log_out(self) {
+        self.0.purge()
+    }
 }
 
 impl FromRequest for TypedSesion {
@@ -28,7 +32,7 @@ impl FromRequest for TypedSesion {
 
     type Future = Ready<Result<TypedSesion, Self::Error>>;
 
-    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+    fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         ready(Ok(TypedSesion(req.get_session())))
     }
 }

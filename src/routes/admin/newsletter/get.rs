@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use crate::authentication::UserId;
 
-pub async fn send_newsletter_issue_form(
+pub async fn publish_newsletter_form(
     flash_message: IncomingFlashMessages,
     _user_id: web::ReqData<UserId>,
 ) -> Result<HttpResponse, actix_web::Error> {

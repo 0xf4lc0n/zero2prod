@@ -106,12 +106,12 @@ async fn newsletters_returns_400_for_invalid_data() {
 }
 
 #[tokio::test]
-async fn requests_missing_authorization_are_rejected() {
+async fn you_must_be_logged_in_to_publish_a_newsletter() {
     // Arrange
     let app = spawn_app().await;
-    let newsletter_request_body = create_publish_newsletter_form_data();
 
     // Act
+    let newsletter_request_body = create_publish_newsletter_form_data();
     let response = app.post_newsletters(&newsletter_request_body).await;
 
     // Assert
@@ -197,7 +197,7 @@ async fn create_confirmed_subscriber(app: &TestApp) {
 }
 
 #[tokio::test]
-async fn you_must_be_logged_in_to_see_the_send_newsletter_issue_form() {
+async fn you_must_be_logged_in_to_see_the_publish_newsletter_form() {
     // Arrange
     let app = spawn_app().await;
 

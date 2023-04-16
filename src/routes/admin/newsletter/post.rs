@@ -14,13 +14,8 @@ use crate::{
 };
 
 #[derive(serde::Deserialize)]
-pub struct BodyData {
+pub struct FormDataNews {
     title: String,
-    content: Content,
-}
-
-#[derive(serde::Deserialize)]
-pub struct Content {
     html: String,
     text: String,
 }
@@ -61,11 +56,11 @@ impl ResponseError for PublishError {
 
 #[tracing::instrument(
     name = "Publish a newsletter issue",
-    skip(body, pool, email_client),
+    skip(form, pool, email_client),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn publish_newsletter(
-    body: web::Json<BodyData>,
+    form: web::Form<FormDataNews>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     user_id: web::ReqData<UserId>,
@@ -82,12 +77,7 @@ pub async fn publish_newsletter(
         match subscriber {
             Ok(subscriber) => {
                 email_client
-                    .send_email(
-                        &subscriber.email,
-                        &body.title,
-                        &body.content.html,
-                        &body.content.text,
-                    )
+                    .send_email(&subscriber.email, &form.title, &form.html, &form.text)
                     .await
                     // Use with_context because format! allocates memory on the heap
                     // with_context is lazy nad format! will be called only when an error occures

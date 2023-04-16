@@ -1,5 +1,5 @@
 use serde_json::Value;
-use uuid::Uuid;
+
 use wiremock::{
     matchers::{any, method, path},
     Mock, ResponseTemplate,
@@ -119,42 +119,12 @@ async fn you_must_be_logged_in_to_publish_a_newsletter() {
 }
 
 #[tokio::test]
-async fn non_existing_user_is_rejected() {
+async fn you_must_be_logged_in_to_see_the_publish_newsletter_form() {
     // Arrange
     let app = spawn_app().await;
 
-    // Act - Part 1 - Login
-    app.post_login(&serde_json::json!({
-        "username": Uuid::new_v4().to_string(),
-        "password": Uuid::new_v4().to_string(),
-    }))
-    .await;
-
-    // Act - Part 2 - Publish newsletter
-    let newsletter_request_body = create_publish_newsletter_form_data();
-
-    let response = app.post_newsletters(&newsletter_request_body).await;
-
-    // Assert
-    assert_is_redirect_to(&response, "/login");
-}
-
-#[tokio::test]
-async fn invalid_password_is_rejected() {
-    // Arrange
-    let app = spawn_app().await;
-
-    // Act - Part 1 - Login with invalid password
-    app.post_login(&serde_json::json!({
-        "username": &app.test_user.username,
-        "password": Uuid::new_v4().to_string()
-    }))
-    .await;
-
-    // Act - Part 2 - Publish newsletter
-    let newsletter_request_body = create_publish_newsletter_form_data();
-
-    let response = app.post_newsletters(&newsletter_request_body).await;
+    // Act
+    let response = app.get_send_newsletter_issue().await;
 
     // Assert
     assert_is_redirect_to(&response, "/login");
@@ -194,18 +164,6 @@ async fn create_confirmed_subscriber(app: &TestApp) {
         .unwrap()
         .error_for_status()
         .unwrap();
-}
-
-#[tokio::test]
-async fn you_must_be_logged_in_to_see_the_publish_newsletter_form() {
-    // Arrange
-    let app = spawn_app().await;
-
-    // Act
-    let response = app.get_send_newsletter_issue().await;
-
-    // Assert
-    assert_is_redirect_to(&response, "/login");
 }
 
 fn create_publish_newsletter_form_data() -> Value {

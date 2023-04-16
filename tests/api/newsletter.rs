@@ -28,11 +28,12 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
 
     // Act - Part 2 - Publish newsletter
     let newsletter_request_body = create_publish_newsletter_form_data();
-
     let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to(&response, "/admin/newsletters");
 
-    // Assert
-    assert_eq!(response.status().as_u16(), 200);
+    // Act - Part 3 - Follow the redirect
+    let html_page = app.get_send_newsletter_issue_html().await;
+    assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 }
 
 #[tokio::test]
@@ -57,11 +58,12 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
 
     // Act - Part 2 - Publish newsletter
     let newsletter_request_body = create_publish_newsletter_form_data();
-
     let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to(&response, "/admin/newsletters");
 
-    // Assert
-    assert_eq!(response.status().as_u16(), 200);
+    // Act - Part 3 - Follow the redirect
+    let html_page = app.get_send_newsletter_issue_html().await;
+    assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 }
 
 #[tokio::test]
@@ -200,7 +202,7 @@ async fn you_must_be_logged_in_to_see_the_send_newsletter_issue_form() {
     let app = spawn_app().await;
 
     // Act
-    let response = app.get_send_newsletter_issue_html().await;
+    let response = app.get_send_newsletter_issue().await;
 
     // Assert
     assert_is_redirect_to(&response, "/login");

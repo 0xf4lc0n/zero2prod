@@ -2,6 +2,7 @@ use actix_web::{
     http::header::{self},
     web, HttpResponse, ResponseError,
 };
+use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use reqwest::{header::HeaderValue, StatusCode};
 use sqlx::PgPool;
@@ -11,10 +12,11 @@ use crate::{
     domain::SubscriberEmail,
     email_client::EmailClient,
     routes::{admin::dashboard::get_username, error_chain_fmt},
+    utils::see_other,
 };
 
 #[derive(serde::Deserialize)]
-pub struct FormDataNews {
+pub struct FormData {
     title: String,
     html: String,
     text: String,
@@ -60,7 +62,7 @@ impl ResponseError for PublishError {
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn publish_newsletter(
-    form: web::Form<FormDataNews>,
+    form: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     user_id: web::ReqData<UserId>,
@@ -95,7 +97,8 @@ pub async fn publish_newsletter(
         }
     }
 
-    Ok(HttpResponse::Ok().finish())
+    FlashMessage::info("The newsletter issue has been published!").send();
+    Ok(see_other("/admin/newsletters"))
 }
 
 struct ConfirmedSubscriber {

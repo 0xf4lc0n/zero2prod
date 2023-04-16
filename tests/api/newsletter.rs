@@ -4,7 +4,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-use crate::helpers::{spawn_app, ConfirmationLinks, TestApp};
+use crate::helpers::{assert_is_redirect_to, spawn_app, ConfirmationLinks, TestApp};
 
 #[tokio::test]
 async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
@@ -217,4 +217,16 @@ async fn create_confirmed_subscriber(app: &TestApp) {
         .unwrap()
         .error_for_status()
         .unwrap();
+}
+
+#[tokio::test]
+async fn you_must_be_logged_in_to_see_the_send_newsletter_issue_form() {
+    // Arrange
+    let app = spawn_app().await;
+
+    // Act
+    let response = app.get_send_newsletter_issue_html().await;
+
+    // Assert
+    assert_is_redirect_to(&response, "/login");
 }

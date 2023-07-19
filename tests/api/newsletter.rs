@@ -119,7 +119,7 @@ async fn newsletter_creation_is_idempotent() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    Mock::given(path("/email"))
+    Mock::given(path("/v5/mail/send"))
         .and(method("POST"))
         .respond_with(ResponseTemplate::new(200))
         .expect(1)
@@ -127,13 +127,7 @@ async fn newsletter_creation_is_idempotent() {
         .await;
 
     // Act - Part 1 - Submit newsletter form
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        // We expect the idempotency key as part of the // form data, not as an header
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
+    let newsletter_request_body = create_publish_newsletter_form_data();
 
     let response = app.post_newsletters(&newsletter_request_body).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
@@ -192,5 +186,6 @@ fn create_publish_newsletter_form_data() -> Value {
         "title": "Newsletter title",
         "text": "Newsletter body as plain text",
         "html": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
     })
 }

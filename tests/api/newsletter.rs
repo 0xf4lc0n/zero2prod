@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde_json::Value;
 
 use wiremock::{
@@ -143,6 +145,34 @@ async fn newsletter_creation_is_idempotent() {
     // Act - Part 4 - Follow the redirect
     let html_page = app.get_send_newsletter_issue_html().await;
     assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
+}
+
+#[tokio::test]
+async fn concurrent_form_submission_is_handled_gracefully() {
+    // Arrange
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    Mock::given(path("/v5/mail/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(2)))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act - Part 1 - Submit two newsletter forms concurrently
+    let newsletter_request_body = create_publish_newsletter_form_data();
+
+    let response_1 = app.post_newsletters(&newsletter_request_body);
+    let response_2 = app.post_newsletters(&newsletter_request_body);
+    let (response_1, response_2) = tokio::join!(response_1, response_2);
+
+    assert_eq!(response_1.status(), response_2.status());
+    assert_eq!(
+        response_1.text().await.unwrap(),
+        response_2.text().await.unwrap()
+    );
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {

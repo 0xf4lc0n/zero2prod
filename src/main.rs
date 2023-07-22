@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 
 use tokio::task::JoinError;
 use zero2prod::configuration::get_configuration;
+use zero2prod::idempotency;
 use zero2prod::issue_delivery_worker::run_worker_until_stopped;
 use zero2prod::startup::Application;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
@@ -16,11 +17,13 @@ async fn main() -> anyhow::Result<()> {
     let application = Application::build(configuration.clone()).await?;
 
     let application_task = tokio::spawn(application.run_until_stopped());
-    let worker_task = tokio::spawn(run_worker_until_stopped(configuration));
+    let delivery_worker = tokio::spawn(run_worker_until_stopped(configuration.clone()));
+    let idempotency_worker = tokio::spawn(idempotency::run_worker_until_stopped(configuration));
 
     tokio::select! {
         o = application_task => report_exit("API", o),
-        o = worker_task => report_exit("Background worker", o)
+        o = delivery_worker => report_exit("Background worker", o),
+        o = idempotency_worker => report_exit("Background worker", o)
     }
 
     opentelemetry::global::shutdown_tracer_provider();

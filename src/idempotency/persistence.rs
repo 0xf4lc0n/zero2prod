@@ -1,8 +1,51 @@
+use std::time::Duration;
+
 use actix_web::{body::to_bytes, http::StatusCode, HttpResponse};
+use chrono::{DateTime, Utc};
 use sqlx::{postgres::PgHasArrayType, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
+use crate::{configuration::Settings, startup::get_connection_pool};
+
 use super::IdempotencyKey;
+
+pub async fn run_worker_until_stopped(configuration: Settings) -> Result<(), anyhow::Error> {
+    let connection_pool = get_connection_pool(&configuration.database);
+    worker_loop(&connection_pool).await
+}
+
+async fn worker_loop(pool: &PgPool) -> Result<(), anyhow::Error> {
+    let expiration_time = Utc::now() - chrono::Duration::minutes(5);
+
+    loop {
+        if let Err(e) = delete_expired_idempotency_keys(pool, expiration_time).await {
+            tracing::error!(
+            error.cause_chain = ?e,
+            error.message = %e,
+            "Failed to delete expired idempotency keys"
+            );
+        }
+        tokio::time::sleep(Duration::from_secs(300)).await;
+    }
+}
+
+pub async fn delete_expired_idempotency_keys(
+    pool: &PgPool,
+    expiration_time: DateTime<Utc>
+) -> Result<(), sqlx::Error> {
+
+    sqlx::query!(
+        r#"
+        DELETE FROM idempotency
+        WHERE created_at <= $1
+        "#,
+        expiration_time
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "header_pair")]

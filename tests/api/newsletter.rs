@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use chrono::Utc;
 use fake::{
     faker::{internet::en::SafeEmail, name::en::Name},
     Fake,
@@ -193,6 +194,37 @@ async fn concurrent_form_submission_is_handled_gracefully() {
     );
 
     app.dispatch_all_pending_emails().await;
+}
+
+#[tokio::test]
+async fn expired_idempotency_keys_are_deleted() {
+    // Arrange
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    Mock::given(path("/v5/mail/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act
+    let newsletter_request_body = create_publish_newsletter_form_data();
+
+    let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to(&response, "/admin/newsletters");
+
+    app.dispatch_all_pending_emails().await;
+
+    app.delete_all_expired_idempotency_keys(Utc::now()).await;
+
+    let remaining_keys = app.get_idempotency_keys_count().await;
+
+    // Assert
+    assert_eq!(remaining_keys, 0);
+
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {

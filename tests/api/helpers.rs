@@ -1,5 +1,6 @@
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
+use chrono::{DateTime, Utc};
 use once_cell::sync::Lazy;
 
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -7,6 +8,7 @@ use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
 use zero2prod::email_client::EmailClient;
+use zero2prod::idempotency::delete_expired_idempotency_keys;
 use zero2prod::issue_delivery_worker::{try_execute_task, ExecutionOutcome};
 use zero2prod::startup::{get_connection_pool, Application};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
@@ -180,6 +182,20 @@ impl TestApp {
                 break;
             }
         }
+    }
+
+    pub async fn delete_all_expired_idempotency_keys(&self, expiration_time: DateTime<Utc>) {
+        delete_expired_idempotency_keys(&self.db_pool, expiration_time)
+            .await
+            .unwrap();
+    }
+
+    pub async fn get_idempotency_keys_count(&self) -> usize {
+        sqlx::query!("SELECT idempotency_key FROM idempotency")
+            .fetch_all(&self.db_pool)
+            .await
+            .unwrap()
+            .len()
     }
 }
 

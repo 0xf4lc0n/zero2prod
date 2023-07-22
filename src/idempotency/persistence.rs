@@ -31,9 +31,8 @@ async fn worker_loop(pool: &PgPool) -> Result<(), anyhow::Error> {
 
 pub async fn delete_expired_idempotency_keys(
     pool: &PgPool,
-    expiration_time: DateTime<Utc>
+    expiration_time: DateTime<Utc>,
 ) -> Result<(), sqlx::Error> {
-
     sqlx::query!(
         r#"
         DELETE FROM idempotency

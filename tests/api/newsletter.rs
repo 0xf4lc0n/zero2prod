@@ -224,7 +224,6 @@ async fn expired_idempotency_keys_are_deleted() {
 
     // Assert
     assert_eq!(remaining_keys, 0);
-
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {

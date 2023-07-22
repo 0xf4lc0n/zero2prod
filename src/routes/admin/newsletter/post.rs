@@ -6,9 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     authentication::UserId,
-    domain::SubscriberEmail,
-    email_client::EmailClient,
-    idempotency::{get_saved_response, save_response, try_processing, IdempotencyKey, NextAction},
+    idempotency::{save_response, try_processing, IdempotencyKey, NextAction},
     utils::{e400, e500, see_other},
 };
 
@@ -22,13 +20,12 @@ pub struct FormData {
 
 #[tracing::instrument(
     name = "Publish a newsletter issue",
-    skip(form, pool, email_client, user_id),
+    skip(form, pool, user_id),
     fields(user_id=%*user_id)
 )]
 pub async fn publish_newsletter(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
-    email_client: web::Data<EmailClient>,
     user_id: web::ReqData<UserId>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user_id.into_inner();

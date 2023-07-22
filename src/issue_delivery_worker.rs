@@ -18,7 +18,7 @@ pub async fn run_worker_until_stopped(configuration: Settings) -> Result<(), any
 
 async fn worker_loop(pool: &PgPool, email_client: &EmailClient) -> Result<(), anyhow::Error> {
     loop {
-        match try_execute_task(&pool, &email_client).await {
+        match try_execute_task(pool, email_client).await {
             Ok(ExecutionOutcome::EmptyQueue) => {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
